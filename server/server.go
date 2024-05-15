@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"time"
+	"os"
+
+	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/gorilla/websocket"
 	"github.com/minio/minio-go/v7"
@@ -36,6 +40,14 @@ type File struct {
 	TextSpeechStatus string
 }
 
+type SpeechToTextResponse struct {
+	Text string
+}
+
+type LanguageResponse struct {
+	Language string
+}
+
 func uploadFile(filePath string) (string, error) {
 
 	ctx := context.Background()
@@ -54,7 +66,7 @@ func uploadFile(filePath string) (string, error) {
 	}
 
 	// Make a new bucket called testbucket.
-	bucketName := "testbucket"
+	bucketName := "reality-defender-assessment-nick"
 	location := "us-east-1"
 
 	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
@@ -73,7 +85,7 @@ func uploadFile(filePath string) (string, error) {
 
 	// Upload the test file
 	// Change the value of filePath if the file is in another location
-	objectName := "testdata"
+	objectName := "reality-defender-assessment-nick-" + filePath
 
 	contentType := "application/octet-stream"
 
@@ -88,7 +100,10 @@ func uploadFile(filePath string) (string, error) {
 
 func main() {
 
-	dsn := "host=localhost user=server password=server dbname=server port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	// dsn := "host=host.docker.internal user=server password=server dbname=server port=5432 sslmode=disable"
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DB_HOST"), os.Getenv("DB_SERVER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"))
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -173,6 +188,10 @@ func main() {
 		}
 
 		err = c.SaveUploadedFile(file, filePath)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
 
 		_, err = uploadFile(filePath)
 		if err != nil {
@@ -194,14 +213,7 @@ func main() {
 		})
 	})
 
-	r.GET("/file-status", func(c *gin.Context) {
-
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-
-	r.GET("/process/text-to-string", func(c *gin.Context) {
+	r.GET("/process/speech-to-text", func(c *gin.Context) {
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -209,28 +221,115 @@ func main() {
 		}
 		defer conn.Close()
 
+		fileName := c.Query("filename")
+
 		// Upload the file to specific dst.
 		// c.SaveUploadedFile(file, dst)
 
-		for i := 0; i < 10; i++ {
-			conn.WriteMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
-			time.Sleep(time.Second)
+		conn.WriteMessage(websocket.TextMessage, []byte("Calling AI Processer"))
+
+		client := http.Client{}
+
+		var jsonStr = []byte(`{"filename": "` + fileName + `"}`)
+		req, err := http.NewRequest("POST", "http://127.0.0.1:5000/speech-to-text", bytes.NewBuffer(jsonStr))
+
+		fmt.Println("making request")
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
 		}
+
+		req.Header = http.Header{
+			"Content-Type": {"application/json"},
+		}
+
+		res, err := client.Do(req)
+		fmt.Println("making call")
+
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		decoder := json.NewDecoder(res.Body)
+
+		var data SpeechToTextResponse
+		err = decoder.Decode(&data)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		fmt.Println("response: ", data.Text)
+
+		conn.WriteMessage(websocket.TextMessage, []byte("AI Processer Completed"))
 
 		// c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 
+		conn.WriteMessage(websocket.TextMessage, []byte("text: "+data.Text))
+
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
+			"text": data.Text,
 		})
 	})
 
 	r.GET("/process/language", func(c *gin.Context) {
 
-		fileType := c.Query("type")
-		fmt.Println("type:", fileType)
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		fileName := c.Query("filename")
+
+		// Upload the file to specific dst.
+		// c.SaveUploadedFile(file, dst)
+
+		conn.WriteMessage(websocket.TextMessage, []byte("Calling AI Processer"))
+
+		client := http.Client{}
+
+		var jsonStr = []byte(`{"filename": "` + fileName + `"}`)
+		req, err := http.NewRequest("POST", "http://127.0.0.1:5000/language", bytes.NewBuffer(jsonStr))
+
+		fmt.Println("making request")
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		req.Header = http.Header{
+			"Content-Type": {"application/json"},
+		}
+
+		res, err := client.Do(req)
+		fmt.Println("making call")
+
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		decoder := json.NewDecoder(res.Body)
+
+		var data LanguageResponse
+		err = decoder.Decode(&data)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		fmt.Println("response: ", data.Language)
+
+		conn.WriteMessage(websocket.TextMessage, []byte("AI Processer Completed"))
+
+		// c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+
+		conn.WriteMessage(websocket.TextMessage, []byte("language: "+data.Language))
 
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
+			"language": data.Language,
 		})
 	})
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

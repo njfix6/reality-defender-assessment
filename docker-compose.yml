@@ -9,9 +9,25 @@ services:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: server
       POSTGRES_DB: server
+    expose:
+      - 5432
     ports:
       - "5432:5432"
     volumes:
       - './var/server-postgres:/var/lib/postgresql/data'
+  server:
+    build: 
+      context: server 
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - server-postgres
+    environment:
+      - DB_HOST=host.docker.internal
+      - DB_SERVER=server
+      - DB_PASSWORD=server 
+      - DB_NAME=server
+      - DB_PORT=5432
 
 
