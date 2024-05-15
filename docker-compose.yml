@@ -29,5 +29,15 @@ services:
       - DB_PASSWORD=server 
       - DB_NAME=server
       - DB_PORT=5432
+      - AI_SERVER=http://host.docker.internal:5000
+  ai:
+    build: 
+      context: ai 
+      dockerfile: ./Dockerfile
+    ports:
+      - "4000:4000"
+    depends_on:
+      - server
+  
 
 

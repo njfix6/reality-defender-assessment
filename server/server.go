@@ -231,7 +231,7 @@ func main() {
 		client := http.Client{}
 
 		var jsonStr = []byte(`{"filename": "` + fileName + `"}`)
-		req, err := http.NewRequest("POST", "http://127.0.0.1:5000/speech-to-text", bytes.NewBuffer(jsonStr))
+		req, err := http.NewRequest("POST", os.Getenv("AI_SERVER")+"/speech-to-text", bytes.NewBuffer(jsonStr))
 
 		fmt.Println("making request")
 		if err != nil {
@@ -291,7 +291,7 @@ func main() {
 		client := http.Client{}
 
 		var jsonStr = []byte(`{"filename": "` + fileName + `"}`)
-		req, err := http.NewRequest("POST", "http://127.0.0.1:5000/language", bytes.NewBuffer(jsonStr))
+		req, err := http.NewRequest("POST", os.Getenv("AI_SERVER")+"/language", bytes.NewBuffer(jsonStr))
 
 		fmt.Println("making request")
 		if err != nil {

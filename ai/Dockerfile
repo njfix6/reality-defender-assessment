@@ -1,9 +1,23 @@
-FROM python:3.11-alpine
+FROM python:3.12.3
+
+RUN apt update && apt install ffmpeg -y
+
+RUN pip install pipenv
+RUN pip install Flask
+# RUN pip install torch
+RUN pip install openai-whisper
+RUN pip install minio
+
+WORKDIR /app
+
+COPY Pipfile ./
+COPY Pipfile.lock ./
+
+# RUN pipenv install
 
 
 
-RUN python -m pip install openai-whisper
+COPY main.py ./
 
-RUN sudo apt update && sudo apt install ffmpeg 
 
-ENTRYPOINT [ "pipenv run flask --app main run" ]
+CMD ["pipenv", "run", "flask", "--app", "main", "run"]

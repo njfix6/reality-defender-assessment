@@ -1,5 +1,16 @@
 # Reality Defender Assessment
 
+## Architecture
+
+![Architecture](./architecture.png)
+
+## Running Local Docker Compose
+
+```
+docker compose build
+docker compose up -d
+```
+
 ## API
 
 #### Creating a user
@@ -28,13 +39,17 @@ curl -X POST http://localhost:8080/upload \
   -H "Content-Type: multipart/form-data"
 ```
 
-#### Calling Language Detection
+#### Calling Speech to text
+
+Call socket endpoint
 
 ```
-ws://localhost:8080/process/language?filename=<filename>
+ws://localhost:8080/process/speech-to-text?filename=<filename>
 ```
 
 #### Calling Language Detection
+
+Call socket endpoint
 
 ```
 ws://localhost:8080/process/language?filename=<filename>
