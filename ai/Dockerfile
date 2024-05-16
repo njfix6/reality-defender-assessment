@@ -4,7 +4,6 @@ RUN apt update && apt install ffmpeg -y
 
 RUN pip install pipenv
 RUN pip install Flask
-# RUN pip install torch
 RUN pip install whisper
 RUN pip install openai-whisper
 RUN pip install minio
@@ -13,10 +12,6 @@ WORKDIR /app
 
 COPY Pipfile ./
 COPY Pipfile.lock ./
-
-# RUN pipenv install
-
-
 
 COPY main.py ./
 
