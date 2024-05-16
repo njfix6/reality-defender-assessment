@@ -35,9 +35,12 @@ type File struct {
 	gorm.Model
 	UserId           uint
 	Name             string
+	FilePath         string
 	WebUrl           string
 	DetectionStatus  string
 	TextSpeechStatus string
+	Detection        string
+	TextSpeech       string
 }
 
 type SpeechToTextResponse struct {
@@ -160,6 +163,8 @@ func main() {
 
 		username := c.Query("username")
 
+		fileName := c.Query("filename")
+
 		var user User
 
 		db.First(&user, "username = ?", username)
@@ -178,7 +183,7 @@ func main() {
 		filePath := "/tmp/test/" + file.Filename
 
 		var fileQuery File
-		db.First(&fileQuery, "name = ?", filePath)
+		db.First(&fileQuery, "name = ?", fileName)
 
 		if fileQuery.ID != 0 {
 			c.JSON(http.StatusOK, gin.H{
@@ -200,7 +205,7 @@ func main() {
 			return
 		}
 
-		dbFile := File{UserId: user.ID, Name: filePath, DetectionStatus: "init", TextSpeechStatus: "init"}
+		dbFile := File{UserId: user.ID, FilePath: filePath, Name: fileName, DetectionStatus: "init", TextSpeechStatus: "init", Detection: "", TextSpeech: ""}
 
 		result := db.Create(&dbFile)
 
@@ -222,6 +227,38 @@ func main() {
 		defer conn.Close()
 
 		fileName := c.Query("filename")
+
+		username := c.Query("username")
+
+		var user User
+
+		db.First(&user, "username = ?", username)
+
+		if user.Username == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "user not found",
+			})
+			return
+		}
+
+		fmt.Println("user id", user.ID)
+
+		var fileQuery File
+
+		db.Model(File{Name: fileName, UserId: user.ID}).First(&fileQuery)
+
+		fmt.Println("query: ", fileQuery.ID)
+
+		if fileQuery.ID == 0 {
+			conn.WriteMessage(websocket.TextMessage, []byte("Calling AI Processer"))
+
+			return
+		} else if fileQuery.TextSpeechStatus != "init" {
+
+			conn.WriteMessage(websocket.TextMessage, []byte("cached: "+fileQuery.TextSpeech))
+
+			return
+		}
 
 		// Upload the file to specific dst.
 		// c.SaveUploadedFile(file, dst)
@@ -251,6 +288,8 @@ func main() {
 			return
 		}
 
+		fmt.Println("call was successs", os.Getenv("AI_SERVER"))
+
 		decoder := json.NewDecoder(res.Body)
 
 		var data SpeechToTextResponse
@@ -268,6 +307,9 @@ func main() {
 
 		conn.WriteMessage(websocket.TextMessage, []byte("text: "+data.Text))
 
+		// update cache
+		db.Model(&fileQuery).Updates(File{TextSpeechStatus: "cached", TextSpeech: data.Text})
+
 		c.JSON(http.StatusOK, gin.H{
 			"text": data.Text,
 		})
@@ -283,8 +325,38 @@ func main() {
 
 		fileName := c.Query("filename")
 
+		username := c.Query("username")
+
+		var user User
+
+		db.First(&user, "username = ?", username)
+
+		if user.Username == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "user not found",
+			})
+			return
+		}
+
 		// Upload the file to specific dst.
 		// c.SaveUploadedFile(file, dst)
+
+		var fileQuery File
+
+		db.Model(File{Name: fileName, UserId: user.ID}).First(&fileQuery)
+
+		fmt.Println("query: ", fileQuery.ID)
+
+		if fileQuery.ID == 0 {
+			conn.WriteMessage(websocket.TextMessage, []byte("Calling AI Processer"))
+
+			return
+		} else if fileQuery.DetectionStatus != "init" {
+
+			conn.WriteMessage(websocket.TextMessage, []byte("cached: "+fileQuery.Detection))
+
+			return
+		}
 
 		conn.WriteMessage(websocket.TextMessage, []byte("Calling AI Processer"))
 
@@ -327,6 +399,9 @@ func main() {
 		// c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 
 		conn.WriteMessage(websocket.TextMessage, []byte("language: "+data.Language))
+
+		// update cache
+		db.Model(&fileQuery).Updates(File{DetectionStatus: "cached", Detection: data.Language})
 
 		c.JSON(http.StatusOK, gin.H{
 			"language": data.Language,

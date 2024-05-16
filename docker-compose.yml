@@ -15,29 +15,29 @@ services:
       - "5432:5432"
     volumes:
       - './var/server-postgres:/var/lib/postgresql/data'
-  server:
-    build: 
-      context: server 
-      dockerfile: ./Dockerfile
-    ports:
-      - "8080:8080"
-    depends_on:
-      - server-postgres
-    environment:
-      - DB_HOST=host.docker.internal
-      - DB_SERVER=server
-      - DB_PASSWORD=server 
-      - DB_NAME=server
-      - DB_PORT=5432
-      - AI_SERVER=http://host.docker.internal:5000
-  ai:
-    build: 
-      context: ai 
-      dockerfile: ./Dockerfile
-    ports:
-      - "4000:4000"
-    depends_on:
-      - server
+  # server:
+  #   build: 
+  #     context: server 
+  #     dockerfile: ./Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - server-postgres
+  #   environment:
+  #     - DB_HOST=host.docker.internal
+  #     - DB_SERVER=server
+  #     - DB_PASSWORD=server 
+  #     - DB_NAME=server
+  #     - DB_PORT=5432
+  #     - AI_SERVER=http://host.docker.internal:8000
+  # ai:
+  #   build: 
+  #     context: ai 
+  #     dockerfile: ./Dockerfile
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - server
   
 
 
