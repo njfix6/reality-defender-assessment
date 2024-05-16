@@ -92,6 +92,8 @@ func uploadFile(filePath string) (string, error) {
 
 	contentType := "application/octet-stream"
 
+	fmt.Println("uploaded bucket", bucketName, objectName)
+
 	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
 		return "", err
@@ -102,8 +104,6 @@ func uploadFile(filePath string) (string, error) {
 }
 
 func main() {
-
-	// dsn := "host=host.docker.internal user=server password=server dbname=server port=5432 sslmode=disable"
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", os.Getenv("DB_HOST"), os.Getenv("DB_SERVER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"))
 
@@ -180,7 +180,7 @@ func main() {
 
 		file, _ := c.FormFile("file")
 
-		filePath := "/tmp/test/" + file.Filename
+		filePath := file.Filename
 
 		var fileQuery File
 		db.First(&fileQuery, "name = ?", fileName)
@@ -395,8 +395,6 @@ func main() {
 		fmt.Println("response: ", data.Language)
 
 		conn.WriteMessage(websocket.TextMessage, []byte("AI Processer Completed"))
-
-		// c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 
 		conn.WriteMessage(websocket.TextMessage, []byte("language: "+data.Language))
 

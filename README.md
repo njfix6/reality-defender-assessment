@@ -26,8 +26,8 @@ curl http://localhost:8080/create-user \
 #### Uploading a file
 
 ```
-curl -X POST http://localhost:8080/upload \
-  -F "file=@/Users/nicholasfix/dev/reality-defender-assessment/server/test/test.txt" \
+curl -X POST http://localhost:8080/upload\?username\=test\&filename\=audio.mp3 \
+  -F "file=@/Users/nicholasfix/dev/reality-defender-assessment/ai/audio.mp3" \
   -H "Content-Type: multipart/form-data"
 ```
 
@@ -44,7 +44,7 @@ curl -X POST http://localhost:8080/upload \
 Call socket endpoint
 
 ```
-ws://localhost:8080/process/speech-to-text?filename=<filename>
+ws://localhost:8080/process/speech-to-text?filename=audio.mp3&username=test
 ```
 
 #### Calling Language Detection
@@ -52,5 +52,5 @@ ws://localhost:8080/process/speech-to-text?filename=<filename>
 Call socket endpoint
 
 ```
-ws://localhost:8080/process/language?filename=<filename>
+ws://localhost:8080/process/language?filename=audio.mp3&username=test
 ```

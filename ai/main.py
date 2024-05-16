@@ -21,23 +21,21 @@ def speechToText():
     filename = content['filename']
     print("processing: " + filename)
 
-    # try:
-    #     response = client.get_object("reality-defender-assessment-nick", "reality-defender-assessment-nick-" + filename)
-    #     print("reponse", response)
-    # # Read data from response.
-    # finally:
-    #     response.close()
-    #     response.release_conn()
 
+    response = client.get_object("reality-defender-assessment-nick", "reality-defender-assessment-nick-"+filename)
 
- 
+    tempFile = "my-object.txt"
 
-  
-    
+    with open(tempFile, "wb") as f:
+        for data in response.stream():
+            f.write(data)    
+
     model = whisper.load_model("base")
-    result = model.transcribe(filename)
+    result = model.transcribe(tempFile)
     text = result["text"]
     print(text)
+
+    response.close()
 
     return jsonify({"text":text})
 
@@ -50,10 +48,20 @@ def language():
     filename = content['filename']
     print("processing: " + filename)
 
+
+    response = client.get_object("reality-defender-assessment-nick", "reality-defender-assessment-nick-"+filename)
+
+    tempFile = "my-object.txt"
+
+    with open(tempFile, "wb") as f:
+        for data in response.stream():
+            f.write(data)  
+
+
     model = whisper.load_model("base")
 
     # load audio and pad/trim it to fit 30 seconds
-    audio = whisper.load_audio(filename)
+    audio = whisper.load_audio(tempFile)
     audio = whisper.pad_or_trim(audio)
 
     # make log-Mel spectrogram and move to the same device as the model
