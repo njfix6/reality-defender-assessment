@@ -31,14 +31,6 @@ curl -X POST http://localhost:8080/upload\?username\=test\&filename\=audio.mp3 \
   -H "Content-Type: multipart/form-data"
 ```
 
-#### Uploading a file
-
-```
-curl -X POST http://localhost:8080/upload \
-  -F "file=@/Users/nicholasfix/dev/reality-defender-assessment/server/test/test.txt" \
-  -H "Content-Type: multipart/form-data"
-```
-
 #### Calling Speech to text
 
 Call socket endpoint
